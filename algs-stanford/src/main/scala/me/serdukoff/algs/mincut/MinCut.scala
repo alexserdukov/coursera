@@ -2,25 +2,47 @@ package me.serdukoff.algs.mincut
 
 import scala.io.Source
 import scala.util.Random
+import me.serdukoff.algs.graph.Graph
 
-class MinCut(graph: Map[Int,Array[Int]]) {
+class MinCut(val graphView: Map[Int, Array[Int]]) {
 
+  type Edge = (Int, Int)
+  type Edges = Array[Edge]
+
+  val count = graphView.keySet.size - 2
+  val graph = Graph(graphView)
+  val random = new Random(System.nanoTime())
+
+  def compute(retries: Int): Int = {
+
+    def find(graph: Graph, count: Int): Int = {
+      if (count == 0){
+        println("Iteration #" + retries + "ended")
+        graph.size
+      }
+      else {
+        val edge = graph.edges(random.nextInt(graph.size))
+        find(graph.contract(edge), count - 1)
+      }
+    }
+
+    if (retries == 0)
+      find(graph, count)
+    else
+      Math.min(find(graph, count), compute(retries - 1))
+  }
 }
 
-object MinCut extends App{
+object MinCut extends App {
 
-    val sourceFile = Source.fromURL(getClass.getResource("/kargerMinCut.txt"))
-    val lines = sourceFile.getLines()
-    val vertices = lines map { line => (line.split("\\t+")) } toArray
-    val tuples  = vertices map ((x:Array[String]) => (x.head.toInt -> x.tail.map(el => el.toInt)))
-    val graph = tuples.toMap
-    
-    print(graph.get(100).get.mkString(","))
-    
- def apply(source: Source) = {
-    val sourceFile = Source.fromURL(getClass.getResource("/kargerMinCut.txt"))
+  def apply(url: String) = {
+    val sourceFile = Source.fromURL(getClass.getResource(url))
     val vertices = sourceFile.getLines() map { line => (line.split("\\t+")) } toArray
-    val graph  = vertices map ((x:Array[String]) => (x.head.toInt -> x.tail.map(el => el.toInt)))
-    new MinCut(graph.toMap)
+    val graphView = vertices map ((x: Array[String]) => (x.head.toInt -> x.tail.map(el => el.toInt)))
+    new MinCut(graphView.toMap)
   }
+
+  val minCut = MinCut("/kargerMinCut.txt")
+  print("MinCut = " + minCut.compute(200).toInt)
+
 }
