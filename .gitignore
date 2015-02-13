@@ -18,6 +18,8 @@
 *.cache
 *.classpath
 *.project
+
+# Idea files
 *.iml
 .idea
 
@@ -27,3 +29,7 @@ hs_err_pid*
 
 # docs
 *.pdf
+
+#dirs
+.worksheet
+**/bin

@@ -1,6 +1,5 @@
 package me.serdukoff.algs.inversions
 
-import scala.annotation.tailrec
 import scala.io.Source.fromURL
 
 /**
