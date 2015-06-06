@@ -1,23 +1,20 @@
 package kvstore
 
-import akka.actor.{OneForOneStrategy, Props, ActorRef, Actor}
+import akka.actor._
 import kvstore.Arbiter._
 import scala.Option
 import scala.collection.immutable.Queue
-import akka.actor.SupervisorStrategy.Restart
+import akka.actor.SupervisorStrategy.{Stop, Restart}
 import scala.annotation.tailrec
 import akka.pattern.{ask, pipe}
-import akka.actor.Terminated
 import scala.concurrent.duration._
-import akka.actor.PoisonPill
-import akka.actor.OneForOneStrategy
-import akka.actor.SupervisorStrategy
 import akka.util.Timeout
 
 object Replica {
 
   sealed trait Operation {
     def key: String
+
     def id: Long
   }
 
@@ -51,6 +48,11 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
   import Persistence._
   import context.dispatcher
 
+  override val supervisorStrategy = OneForOneStrategy(withinTimeRange = 1 second) {
+    case _: PersistenceException => Restart
+    case _: ActorKilledException => Stop
+  }
+
   /*
    * The contents of this actor is just a suggestion, you can implement it in any way you like.
    */
@@ -61,7 +63,7 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
   // the current set of replicators
   var replicators = Set.empty[ActorRef]
 
-  val persistActor = context.actorOf(persistenceProps)
+  val persistActor = context.actorOf(persistenceProps, "persistence")
 
   arbiter ! Join
 
@@ -70,17 +72,17 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
     case JoinedSecondary => context.become(replica)
   }
 
-  /* TODO Behavior for  the leader role. */
   val leader: Receive = {
     case Replicas(actors) => {
       //TODO  define a name for replicator actor
       actors.foreach(actor => {
         val replicator = context.actorOf(Replicator.props(actor))
         secondaries + (actor -> replicator)
-        replicators + context.actorOf(Replicator.props(actor))
+        replicators += replicator
       });
 
     }
+    // TODO implement OperationFailed behaviour - inability to confirm the operation within 1 second
     case Insert(key, value, id) => {
       kv = kv + (key -> value)
       replicators foreach {
@@ -88,6 +90,7 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
           replicator ! Replicate(key, Some(value), id)
         }
       }
+      sender ! OperationAck(id)
       persistActor ! Persist(key, Some(value), id)
       println("Insert completed")
     }
@@ -98,10 +101,11 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
           replicator ! Replicate(key, None, id)
         }
       }
+      sender ! OperationAck(id)
       println("Remove done")
     }
     case Replicated(key, id) => {
-      sender ! OperationAck(id)
+
     }
     case Persisted(key, id) => {
 
