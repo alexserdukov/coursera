@@ -8,6 +8,7 @@
 **/.idea
 **/submissions
 /experiments
+.DS_Store
 
 # Package Files #
 *.jar
