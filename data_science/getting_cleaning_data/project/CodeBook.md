@@ -1,2 +1,0 @@
-<center> Data Dictionary </center>
-
