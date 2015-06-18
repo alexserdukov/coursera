@@ -40,13 +40,15 @@ class Replicator(val replica: ActorRef) extends Actor {
   /* TODO Behavior for the Replicator. */
   def receive: Receive = {
     case Replicate(key, valOption, id) => {
-      replica ! Snapshot(key, valOption, nextSeq)
-      sender ! Replicated(key, id)
+      val currSeq = nextSeq
+      replica ! Snapshot(key, valOption, currSeq)
+      acks += (currSeq -> (sender, Replicate(key, valOption, id)))
     }
     // Snapshot was acknowledged by replica.
     // The replica might never send this reply in case it is unable to persist the update
     case SnapshotAck(key, seq) => {
-
+      acks(seq)._1 ! Replicated(acks(seq)._2.key, acks(seq)._2.id)
+      acks -= seq
     }
     case _ =>
   }

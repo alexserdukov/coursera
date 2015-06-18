@@ -48,9 +48,8 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
   import Persistence._
   import context.dispatcher
 
-  override val supervisorStrategy = OneForOneStrategy(withinTimeRange = 1 second) {
+  override val supervisorStrategy = OneForOneStrategy() {
     case _: PersistenceException => Restart
-    case _: ActorKilledException => Stop
   }
 
   /*
@@ -62,6 +61,8 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
   var secondaries = Map.empty[ActorRef, ActorRef]
   // the current set of replicators
   var replicators = Set.empty[ActorRef]
+
+  var unpersistedRecords = Map.empty[Long, Tuple2[String, String]]
 
   val persistActor = context.actorOf(persistenceProps, "persistence")
 
@@ -84,15 +85,16 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
     }
     // TODO implement OperationFailed behaviour - inability to confirm the operation within 1 second
     case Insert(key, value, id) => {
+      println(s"Insert $key, $value")
       kv = kv + (key -> value)
       replicators foreach {
         replicator => {
           replicator ! Replicate(key, Some(value), id)
         }
       }
+      //persistActor ! Persist(key, Some(value), id)
+      //unpersistedRecords += (id -> (key, value))
       sender ! OperationAck(id)
-      persistActor ! Persist(key, Some(value), id)
-      println("Insert completed")
     }
     case Remove(key, id) => {
       kv = kv - key
@@ -102,16 +104,22 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
         }
       }
       sender ! OperationAck(id)
-      println("Remove done")
     }
     case Replicated(key, id) => {
-
+      sender ! OperationAck(id)
     }
     case Persisted(key, id) => {
+      unpersistedRecords -= id
+    }
 
+    case Restarted => {
+      unpersistedRecords foreach(entry => {
+        persistActor ! Persist(entry._2._1, Some(entry._2._2), entry._1)
+      })
     }
     case Get(key, id) => {
-      sender ! GetResult(key, Option(kv(key)), id)
+      println(s"Get $key")
+      sender ! GetResult(key, kv.get(key), id)
     }
     case _ => println("Unknown message received ")
   }
@@ -120,12 +128,13 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
   val replica: Receive = {
     case Snapshot(key, valueOption, seq) => {
       valueOption match {
-        case Some(value) => kv + (key -> value)
-        case None => kv - key
+        case Some(value) => kv += (key -> value)
+        case None => kv -= key
       }
+      sender ! SnapshotAck(key, seq)
     }
     case Get(key, id) => {
-      sender ! GetResult(key, Option(kv(key)), id)
+      sender ! GetResult(key, kv.get(key), id)
     }
     case _ =>
   }

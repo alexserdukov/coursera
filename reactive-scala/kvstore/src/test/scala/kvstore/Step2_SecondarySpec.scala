@@ -76,7 +76,7 @@ class Step2_SecondarySpec extends TestKit(ActorSystem("Step2SecondarySpec"))
 
     replicator.send(secondary, Snapshot("k1", None, 0L))
     replicator.expectMsg(SnapshotAck("k1", 0L))
-    client.get("k1") should ===(Some("v1"))
+,    client.get("k1") should ===(Some("v1"))
 
     replicator.send(secondary, Snapshot("k1", Some("v2"), 1L))
     replicator.expectMsg(SnapshotAck("k1", 1L))
