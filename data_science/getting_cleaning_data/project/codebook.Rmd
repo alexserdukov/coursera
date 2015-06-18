@@ -1,0 +1,7 @@
+---
+title: "codebook"
+output: pdf_document
+---
+```{r}
+summary(result)
+```
