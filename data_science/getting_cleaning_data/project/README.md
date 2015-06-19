@@ -2,8 +2,7 @@ This file describes how run_analysis.R script works.
 
 What you need in order to quickly observe results:
 
-* It is not needed to download the data manually because the script will download and unzip it for you.
-  If you already have the data in your PC than you can skip first two lines.
+* It is not needed to download the data manually because the script will download and unzip it for you if it doesn't exist
 * Run the script and wait a few seconds for completion.
 * Explore result data set in run_analysis.txt
 
