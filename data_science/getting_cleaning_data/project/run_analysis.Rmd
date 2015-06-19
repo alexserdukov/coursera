@@ -35,6 +35,8 @@ filtered_features <- grep("-mean\\(\\)|-std\\(\\)", features[,2])
 filtered_activities_stats <- activities_stats[,filtered_features]
 names(filtered_activities_stats) <- gsub("\\(\\)", "", features[filtered_features, 2])
 names(filtered_activities_stats) <- gsub("BodyBody", "Body", names(filtered_activities_stats))
+names(filtered_activities_stats) <- gsub("mean", "Mean", names(filtered_activities_stats))
+names(filtered_activities_stats) <- gsub("std", "Std", names(filtered_activities_stats))
 names(filtered_activities_stats) <- gsub("-", "", names(filtered_activities_stats))
 ```
 Label activities and name them also
