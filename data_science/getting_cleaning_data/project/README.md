@@ -9,8 +9,8 @@ What you need in order to quickly observe results:
 
 Following is brief description of what the script does:
 
-* Merges train and test data in one data frame. As result we get data frame with dimension 10299*561.
+* Merges train and test data in one data frame. As result we get data frame with dimension 10299x561.
   It represents all statistics gained but it still doesn't have descriptive names.
-* Filters data set from step 1 only by mean and std variables.
+* Filters data set from step 1 only by mean and std variables (10299x68)
 * Assigns the data from step 2 with descriptive names and labels. Now we have data ready for average calculation
 * Uses dplyr package for calculation of average of all variables and creates final data set, that is saved in run_analysis.txt file.
