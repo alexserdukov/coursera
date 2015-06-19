@@ -1,7 +1,6 @@
----
-title: "codebook"
-output: pdf_document
----
+### Codebook for Getting and Cleaning Data Project
+
+Here you can find details about fields of the result dataset
 ```{r}
-summary(result)
+str(result)
 ```
