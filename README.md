@@ -1,1 +1,1 @@
-Repository for practical tasks in Coursera
+Repository for assignments in Coursera
